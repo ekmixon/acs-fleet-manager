@@ -28,7 +28,7 @@ func TestClientGetManagedCentralList(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client, err := NewClient(ts.URL, "cluster-id", &noAuth{})
+	client, err := NewRestClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
 	result, err := client.GetManagedCentralList()
@@ -49,7 +49,7 @@ func TestClientReturnsError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client, err := NewClient(ts.URL, "cluster-id", &noAuth{})
+	client, err := NewRestClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
 	_, err = client.GetManagedCentralList()
@@ -63,7 +63,7 @@ func TestClientUpdateStatus(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client, err := NewClient(ts.URL, "cluster-id", &noAuth{})
+	client, err := NewRestClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
 	statuses := map[string]private.DataPlaneCentralStatus{}

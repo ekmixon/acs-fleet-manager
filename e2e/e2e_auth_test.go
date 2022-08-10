@@ -88,7 +88,7 @@ var _ = Describe("AuthN/Z Fleet* components", func() {
 		BeforeEach(func() {
 			auth, err := fleetmanager.NewAuth(ocmAuthType)
 			Expect(err).ToNot(HaveOccurred())
-			fmClient, err := fleetmanager.NewClient(fleetManagerEndpoint, clusterID, auth)
+			fmClient, err := fleetmanager.NewRestClient(fleetManagerEndpoint, clusterID, auth)
 			Expect(err).ToNot(HaveOccurred())
 			client = newAuthTestClient(fmClient, auth, fleetManagerEndpoint)
 		})
@@ -110,7 +110,7 @@ var _ = Describe("AuthN/Z Fleet* components", func() {
 		BeforeEach(func() {
 			auth, err := fleetmanager.NewAuth(staticTokenAuthType)
 			Expect(err).ToNot(HaveOccurred())
-			fmClient, err := fleetmanager.NewClient(fleetManagerEndpoint, clusterID, auth)
+			fmClient, err := fleetmanager.NewRestClient(fleetManagerEndpoint, clusterID, auth)
 			Expect(err).ToNot(HaveOccurred())
 			client = newAuthTestClient(fmClient, auth, fleetManagerEndpoint)
 		})
@@ -155,7 +155,7 @@ var _ = Describe("AuthN/Z Fleet* components", func() {
 			// Create the auth type for RH SSO.
 			auth, err := fleetmanager.NewAuth(rhSSOAuthType)
 			Expect(err).ToNot(HaveOccurred())
-			fmClient, err := fleetmanager.NewClient(fleetManagerEndpoint, clusterID, auth)
+			fmClient, err := fleetmanager.NewRestClient(fleetManagerEndpoint, clusterID, auth)
 			Expect(err).ToNot(HaveOccurred())
 			client = newAuthTestClient(fmClient, auth, fleetManagerEndpoint)
 
@@ -186,16 +186,16 @@ var _ = Describe("AuthN/Z Fleet* components", func() {
 
 // Helpers.
 
-// authTestClientFleetManager embeds the fleetmanager.Client and adds additional method for admin API (which shouldn't
-// be a part of the fleetmanager.Client as it is only used within tests).
+// authTestClientFleetManager embeds the fleetmanager.RestClient and adds additional method for admin API (which shouldn't
+// be a part of the fleetmanager.RestClient as it is only used within tests).
 type authTestClientFleetManager struct {
-	*fleetmanager.Client
+	*fleetmanager.RestClient
 	auth     fleetmanager.Auth
 	h        http.Client
 	endpoint string
 }
 
-func newAuthTestClient(c *fleetmanager.Client, auth fleetmanager.Auth, endpoint string) *authTestClientFleetManager {
+func newAuthTestClient(c *fleetmanager.RestClient, auth fleetmanager.Auth, endpoint string) *authTestClientFleetManager {
 	return &authTestClientFleetManager{c, auth, http.Client{}, endpoint}
 }
 

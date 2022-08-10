@@ -34,7 +34,7 @@ var backoff = wait.Backoff{
 // Runtime represents the runtime to reconcile all centrals associated with the given cluster.
 type Runtime struct {
 	config           *config.Config
-	client           *fleetmanager.Client
+	client           fleetmanager.Client
 	reconcilers      reconcilerRegistry // TODO(create-ticket): possible leak. consider reconcilerRegistry cleanup
 	k8sClient        ctrlClient.Client
 	statusResponseCh chan private.DataPlaneCentralStatus
@@ -46,7 +46,7 @@ func NewRuntime(config *config.Config, k8sClient ctrlClient.Client) (*Runtime, e
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create fleet manager authentication")
 	}
-	client, err := fleetmanager.NewClient(config.FleetManagerEndpoint, config.ClusterID,
+	client, err := fleetmanager.NewRestClient(config.FleetManagerEndpoint, config.ClusterID,
 		auth)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create fleet manager client")
