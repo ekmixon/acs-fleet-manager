@@ -48,7 +48,7 @@ var _ = Describe("Central", func() {
 
 		auth, err := fleetmanager.NewAuth(authType)
 		Expect(err).ToNot(HaveOccurred())
-		client, err = fleetmanager.NewRestClient(fleetManagerEndpoint, "cluster-id", auth)
+		client, err = fleetmanager.NewRESTClient(fleetManagerEndpoint, "cluster-id", auth)
 		Expect(err).ToNot(HaveOccurred())
 	})
 

@@ -30,8 +30,8 @@ type RESTClient struct {
 	consoleAPIEndpoint    string
 }
 
-// NewRestClient creates a new client
-func NewRestClient(endpoint string, clusterID string, auth Auth) (*RESTClient, error) {
+// NewRESTClient creates a new client
+func NewRESTClient(endpoint string, clusterID string, auth Auth) (*RESTClient, error) {
 	if clusterID == "" {
 		return nil, errors.New("cluster id is empty")
 	}

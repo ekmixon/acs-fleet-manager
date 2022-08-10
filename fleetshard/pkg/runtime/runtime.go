@@ -46,7 +46,7 @@ func NewRuntime(config *config.Config, k8sClient ctrlClient.Client) (*Runtime, e
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create fleet manager authentication")
 	}
-	client, err := fleetmanager.NewRestClient(config.FleetManagerEndpoint, config.ClusterID,
+	client, err := fleetmanager.NewRESTClient(config.FleetManagerEndpoint, config.ClusterID,
 		auth)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create fleet manager client")

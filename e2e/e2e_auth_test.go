@@ -88,7 +88,7 @@ var _ = Describe("AuthN/Z Fleet* components", func() {
 		BeforeEach(func() {
 			auth, err := fleetmanager.NewAuth(ocmAuthType)
 			Expect(err).ToNot(HaveOccurred())
-			fmClient, err := fleetmanager.NewRestClient(fleetManagerEndpoint, clusterID, auth)
+			fmClient, err := fleetmanager.NewRESTClient(fleetManagerEndpoint, clusterID, auth)
 			Expect(err).ToNot(HaveOccurred())
 			client = newAuthTestClient(fmClient, auth, fleetManagerEndpoint)
 		})
@@ -110,7 +110,7 @@ var _ = Describe("AuthN/Z Fleet* components", func() {
 		BeforeEach(func() {
 			auth, err := fleetmanager.NewAuth(staticTokenAuthType)
 			Expect(err).ToNot(HaveOccurred())
-			fmClient, err := fleetmanager.NewRestClient(fleetManagerEndpoint, clusterID, auth)
+			fmClient, err := fleetmanager.NewRESTClient(fleetManagerEndpoint, clusterID, auth)
 			Expect(err).ToNot(HaveOccurred())
 			client = newAuthTestClient(fmClient, auth, fleetManagerEndpoint)
 		})
@@ -155,7 +155,7 @@ var _ = Describe("AuthN/Z Fleet* components", func() {
 			// Create the auth type for RH SSO.
 			auth, err := fleetmanager.NewAuth(rhSSOAuthType)
 			Expect(err).ToNot(HaveOccurred())
-			fmClient, err := fleetmanager.NewRestClient(fleetManagerEndpoint, clusterID, auth)
+			fmClient, err := fleetmanager.NewRESTClient(fleetManagerEndpoint, clusterID, auth)
 			Expect(err).ToNot(HaveOccurred())
 			client = newAuthTestClient(fmClient, auth, fleetManagerEndpoint)
 
