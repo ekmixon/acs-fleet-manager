@@ -186,16 +186,16 @@ var _ = Describe("AuthN/Z Fleet* components", func() {
 
 // Helpers.
 
-// authTestClientFleetManager embeds the fleetmanager.RestClient and adds additional method for admin API (which shouldn't
-// be a part of the fleetmanager.RestClient as it is only used within tests).
+// authTestClientFleetManager embeds the fleetmanager.RESTClient and adds additional method for admin API (which shouldn't
+// be a part of the fleetmanager.RESTClient as it is only used within tests).
 type authTestClientFleetManager struct {
-	*fleetmanager.RestClient
+	*fleetmanager.RESTClient
 	auth     fleetmanager.Auth
 	h        http.Client
 	endpoint string
 }
 
-func newAuthTestClient(c *fleetmanager.RestClient, auth fleetmanager.Auth, endpoint string) *authTestClientFleetManager {
+func newAuthTestClient(c *fleetmanager.RESTClient, auth fleetmanager.Auth, endpoint string) *authTestClientFleetManager {
 	return &authTestClientFleetManager{c, auth, http.Client{}, endpoint}
 }
 

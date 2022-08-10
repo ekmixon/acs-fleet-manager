@@ -21,8 +21,8 @@ const (
 	publicCentralURI = "api/rhacs/v1/centrals"
 )
 
-// RestClient represents the REST client for connecting to fleet-manager
-type RestClient struct {
+// RESTClient represents the REST client for connecting to fleet-manager
+type RESTClient struct {
 	client                http.Client
 	auth                  Auth
 	clusterID             string
@@ -31,7 +31,7 @@ type RestClient struct {
 }
 
 // NewRestClient creates a new client
-func NewRestClient(endpoint string, clusterID string, auth Auth) (*RestClient, error) {
+func NewRestClient(endpoint string, clusterID string, auth Auth) (*RESTClient, error) {
 	if clusterID == "" {
 		return nil, errors.New("cluster id is empty")
 	}
@@ -40,7 +40,7 @@ func NewRestClient(endpoint string, clusterID string, auth Auth) (*RestClient, e
 		return nil, errors.New("fleetshardAPIEndpoint is empty")
 	}
 
-	return &RestClient{
+	return &RESTClient{
 		client:                http.Client{},
 		clusterID:             clusterID,
 		auth:                  auth,
@@ -50,7 +50,7 @@ func NewRestClient(endpoint string, clusterID string, auth Auth) (*RestClient, e
 }
 
 // GetManagedCentralList returns a list of centrals from fleet-manager which should be managed by this fleetshard.
-func (c *RestClient) GetManagedCentralList() (*private.ManagedCentralList, error) {
+func (c *RESTClient) GetManagedCentralList() (*private.ManagedCentralList, error) {
 	resp, err := c.newRequest(http.MethodGet, c.fleetshardAPIEndpoint, &bytes.Buffer{})
 	if err != nil {
 		return nil, err
@@ -67,7 +67,7 @@ func (c *RestClient) GetManagedCentralList() (*private.ManagedCentralList, error
 
 // UpdateStatus batch updates the status of managed centrals. The status param takes a map of DataPlaneCentralStatus indexed by
 // the Centrals ID.
-func (c *RestClient) UpdateStatus(statuses map[string]private.DataPlaneCentralStatus) error {
+func (c *RESTClient) UpdateStatus(statuses map[string]private.DataPlaneCentralStatus) error {
 	updateBody, err := json.Marshal(statuses)
 	if err != nil {
 		return fmt.Errorf("marshalling data-plane central status: %w", err)
@@ -85,7 +85,7 @@ func (c *RestClient) UpdateStatus(statuses map[string]private.DataPlaneCentralSt
 }
 
 // CreateCentral creates a central from the public fleet-manager API
-func (c *RestClient) CreateCentral(request public.CentralRequestPayload) (*public.CentralRequest, error) {
+func (c *RESTClient) CreateCentral(request public.CentralRequestPayload) (*public.CentralRequest, error) {
 	reqBody, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling request for central creation: %w", err)
@@ -105,7 +105,7 @@ func (c *RestClient) CreateCentral(request public.CentralRequestPayload) (*publi
 }
 
 // GetCentral returns a Central from the public fleet-manager API
-func (c *RestClient) GetCentral(id string) (*public.CentralRequest, error) {
+func (c *RESTClient) GetCentral(id string) (*public.CentralRequest, error) {
 	resp, err := c.newRequest(http.MethodGet, fmt.Sprintf("%s/%s", c.consoleAPIEndpoint, id), nil)
 	if err != nil {
 		return nil, err
@@ -121,7 +121,7 @@ func (c *RestClient) GetCentral(id string) (*public.CentralRequest, error) {
 }
 
 // DeleteCentral deletes a central from the public fleet-manager API
-func (c *RestClient) DeleteCentral(id string) error {
+func (c *RESTClient) DeleteCentral(id string) error {
 	resp, err := c.newRequest(http.MethodDelete, fmt.Sprintf("%s/%s?async=true", c.consoleAPIEndpoint, id), nil)
 	if err != nil {
 		return err
@@ -134,7 +134,7 @@ func (c *RestClient) DeleteCentral(id string) error {
 	return nil
 }
 
-func (c *RestClient) newRequest(method string, url string, body io.Reader) (*http.Response, error) {
+func (c *RESTClient) newRequest(method string, url string, body io.Reader) (*http.Response, error) {
 	glog.Infof("Send request to %s", url)
 	r, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -154,7 +154,7 @@ func (c *RestClient) newRequest(method string, url string, body io.Reader) (*htt
 // unmarshalResponse unmarshalls a fleet-manager response. It returns an error if
 // fleet-manager returns errors from its API.
 // If the value v is nil the response is not marshalled into a struct, instead only checked for an API error.
-func (c *RestClient) unmarshalResponse(resp *http.Response, v interface{}) error {
+func (c *RESTClient) unmarshalResponse(resp *http.Response, v interface{}) error {
 	defer func() { _ = resp.Body.Close() }()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
