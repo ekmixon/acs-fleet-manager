@@ -1,0 +1,131 @@
+syntax = "proto3";
+
+package fleetmanager;
+
+option go_package = "github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private/fleetmanager-private-grpc";
+
+message CentralVersions {
+    string central = 1;
+    string centralOperator = 2;
+}
+
+message Condition {
+    string type = 1;
+    string reason = 2;
+    string message = 3;
+    string status = 4;
+    string lastTransitionTime = 5;
+}
+
+message CentralStatus {
+    repeated Condition conditions = 1;
+    CentralVersions versions = 2;
+}
+
+message UpdateCentralStatusRequest {
+    string agent_cluster = 1;
+    map <string, CentralStatus> updates = 2;
+}
+
+message UpdateCentralStatusResponse {
+    string message = 1;
+}
+
+message ManagedCentralMetadataAnnotations {
+    string mas_id = 1;
+    string mas_placement_id = 2;
+}
+
+message ManagedCentralMetadata {
+    string name = 1;
+    string namespace = 2;
+    ManagedCentralMetadataAnnotations annotations = 3;
+    string deletion_timestamp = 4;
+}
+
+message ManagedCentralSpecAuth {
+    string client_secret = 1;
+    string client_id = 2;
+    string owner_user_id = 3;
+    string owner_org_id = 4;
+    string issuer = 5;
+}
+
+message ManagedCentralSpecUiEndpointTLS {
+    string cert = 1;
+    string key = 2;
+}
+
+message ManagedCentralSpecUiEndpoint {
+    string host = 1;
+    ManagedCentralSpecUiEndpointTLS tls = 2;
+}
+
+message ManagedCentralSpecDataEndpoint {
+    string host = 1;
+}
+
+message ResourceList {
+    string cpu = 1;
+    string memory = 2;
+}
+
+message ResourceRequirements {
+    ResourceList requests = 1;
+    ResourceList limits = 2;
+}
+
+message ManagedCentralSpecCentral {
+    ResourceRequirements resources = 1;
+}
+
+message ManagedCentralSpecScannerAnalyzerScaling {
+    string auto_scaling = 1;
+    int32 replicas = 2;
+    int32 minReplicas = 3;
+    int32 maxReplicas = 4;
+}
+
+message ManagedCentralSpecScannerAnalyzer {
+    ResourceRequirements resources = 2;
+}
+
+message ManagedCentralSpecScannerDb {
+    string host = 1;
+}
+
+message ManagedCentralSpecScanner {
+    ManagedCentralSpecScannerAnalyzer analyzer = 1;
+    ManagedCentralSpecScannerDb db = 2;
+}
+
+message ManagedCentralSpec {
+    repeated string owners = 1;
+    ManagedCentralSpecAuth auth = 2;
+    ManagedCentralSpecUiEndpoint ui_endpoint = 3;
+    ManagedCentralSpecDataEndpoint data_endpoint = 4;
+    CentralVersions versions = 5;
+    ManagedCentralSpecCentral central = 6;
+    ManagedCentralSpecScanner scanner = 7;
+}
+
+message ManagedCentral {
+    string id = 1;
+    string kind = 2;
+    ManagedCentralMetadata metadata = 3;
+    ManagedCentralSpec spec = 4;
+    string request_status = 5;
+}
+
+message GetCentralsRequest {
+    string agent_cluster = 1;
+}
+
+message GetCentralsResponse {
+    repeated ManagedCentral centrals = 1;
+}
+
+service FleetManagerPrivate {
+  rpc UpdateCentralStatus( UpdateCentralStatusRequest ) returns ( UpdateCentralStatusResponse ) {}
+  rpc GetCentrals ( GetCentralsRequest ) returns ( GetCentralsResponse ) {}
+}
