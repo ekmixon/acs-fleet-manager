@@ -50,7 +50,7 @@ func NewRESTClient(endpoint string, clusterID string, auth Auth) (*RESTClient, e
 }
 
 // GetManagedCentralList returns a list of centrals from fleet-manager which should be managed by this fleetshard.
-func (c *RESTClient) GetManagedCentralList() (*private.ManagedCentralList, error) {
+func (c *RESTClient) GetManagedCentralList() ([]private.ManagedCentral, error) {
 	resp, err := c.newRequest(http.MethodGet, c.fleetshardAPIEndpoint, &bytes.Buffer{})
 	if err != nil {
 		return nil, err
@@ -62,13 +62,15 @@ func (c *RESTClient) GetManagedCentralList() (*private.ManagedCentralList, error
 		return nil, errors.Wrapf(err, "calling %s", c.fleetshardAPIEndpoint)
 	}
 
-	return list, nil
+	return list.Items, nil
 }
 
 // UpdateStatus batch updates the status of managed centrals. The status param takes a map of DataPlaneCentralStatus indexed by
 // the Centrals ID.
-func (c *RESTClient) UpdateStatus(statuses map[string]private.DataPlaneCentralStatus) error {
-	updateBody, err := json.Marshal(statuses)
+func (c *RESTClient) UpdateStatus(id string, status private.DataPlaneCentralStatus) error {
+	updateBody, err := json.Marshal(map[string]private.DataPlaneCentralStatus{
+		id: status,
+	})
 	if err != nil {
 		return fmt.Errorf("marshalling data-plane central status: %w", err)
 	}

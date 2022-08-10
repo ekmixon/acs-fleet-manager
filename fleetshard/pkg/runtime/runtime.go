@@ -80,8 +80,8 @@ func (r *Runtime) Start() error {
 		}
 
 		// Start for each Central its own reconciler which can be triggered by sending a central to the receive channel.
-		glog.Infof("Received %d centrals", len(list.Items))
-		for _, central := range list.Items {
+		glog.Infof("Received %d centrals", len(list))
+		for _, central := range list {
 			if _, ok := r.reconcilers[central.Id]; !ok {
 				r.reconcilers[central.Id] = centralReconciler.NewCentralReconciler(r.k8sClient, central, routesAvailable, r.config.CreateAuthProvider)
 			}
@@ -115,9 +115,7 @@ func (r *Runtime) handleReconcileResult(central private.ManagedCentral, status *
 		return
 	}
 
-	err = r.client.UpdateStatus(map[string]private.DataPlaneCentralStatus{
-		central.Id: *status,
-	})
+	err = r.client.UpdateStatus(central.Id, *status)
 	if err != nil {
 		err = errors.Wrapf(err, "updating status for Central %s/%s", central.Metadata.Namespace, central.Metadata.Name)
 		glog.Error(err)

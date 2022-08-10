@@ -66,7 +66,6 @@ func TestClientUpdateStatus(t *testing.T) {
 	client, err := NewRESTClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
-	statuses := map[string]private.DataPlaneCentralStatus{}
-	err = client.UpdateStatus(statuses)
+	err = client.UpdateStatus("123", private.DataPlaneCentralStatus{})
 	require.NoError(t, err)
 }
