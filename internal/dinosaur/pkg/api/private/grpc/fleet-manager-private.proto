@@ -17,9 +17,15 @@ message Condition {
     string lastTransitionTime = 5;
 }
 
+message Routes {
+    string domain = 1;
+    string router = 2;
+}
+
 message CentralStatus {
     repeated Condition conditions = 1;
     CentralVersions versions = 2;
+    repeated Routes routes = 3;
 }
 
 message UpdateCentralStatusRequest {
