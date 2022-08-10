@@ -90,6 +90,7 @@ func ServiceProviders() di.Option {
 
 		// Types registered as a BootService are started when the env is started
 		di.Provide(server.NewAPIServer, di.As(new(environments.BootService))),
+		di.Provide(server.NewGRPCServer, di.As(new(environments.BootService))),
 		di.Provide(server.NewMetricsServer, di.As(new(environments.BootService))),
 		di.Provide(server.NewHealthCheckServer, di.As(new(environments.BootService))),
 		di.Provide(workers.NewLeaderElectionManager, di.As(new(environments.BootService))),

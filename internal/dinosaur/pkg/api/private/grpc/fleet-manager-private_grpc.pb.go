@@ -2,9 +2,9 @@
 // versions:
 // - protoc-gen-go-grpc v1.2.0
 // - protoc             v3.19.4
-// source: internal/dinosaur/pkg/api/private/grpc/fleet-manger-private.proto
+// source: internal/dinosaur/pkg/api/private/grpc/fleet-manager-private.proto
 
-package fleetmanager_private_grpc
+package grpc
 
 import (
 	context "context"
@@ -137,5 +137,5 @@ var FleetManagerPrivate_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "internal/dinosaur/pkg/api/private/grpc/fleet-manger-private.proto",
+	Metadata: "internal/dinosaur/pkg/api/private/grpc/fleet-manager-private.proto",
 }

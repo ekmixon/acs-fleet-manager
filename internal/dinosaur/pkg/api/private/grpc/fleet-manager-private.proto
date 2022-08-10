@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package fleetmanager;
 
-option go_package = "github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private/fleetmanager-private-grpc";
+option go_package = "github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private/grpc";
 
 message CentralVersions {
     string central = 1;
@@ -87,6 +87,7 @@ message ManagedCentralSpecScannerAnalyzerScaling {
 }
 
 message ManagedCentralSpecScannerAnalyzer {
+    ManagedCentralSpecScannerAnalyzerScaling scaling = 1;
     ResourceRequirements resources = 2;
 }
 

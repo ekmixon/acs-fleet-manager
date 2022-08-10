@@ -22,6 +22,7 @@ import (
 	observatoriumClient "github.com/stackrox/acs-fleet-manager/pkg/client/observatorium"
 	environments2 "github.com/stackrox/acs-fleet-manager/pkg/environments"
 	"github.com/stackrox/acs-fleet-manager/pkg/providers"
+	"github.com/stackrox/acs-fleet-manager/pkg/server"
 )
 
 // EnvConfigProviders ...
@@ -68,6 +69,7 @@ func ServiceProviders() di.Option {
 	return di.Options(
 		di.Provide(services.NewClusterService),
 		di.Provide(services.NewDinosaurService, di.As(new(services.DinosaurService))),
+		di.Provide(services.NewDinosaurService, di.As(new(server.CentralService))),
 		di.Provide(services.NewCloudProvidersService),
 		di.Provide(services.NewObservatoriumService),
 		di.Provide(services.NewFleetshardOperatorAddon),
