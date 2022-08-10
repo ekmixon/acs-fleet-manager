@@ -1,12 +1,12 @@
 package presenters
 
 import (
+	private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/dbapi"
-	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
 )
 
 // ConvertDataPlaneDinosaurStatus ...
-func ConvertDataPlaneDinosaurStatus(status map[string]private.DataPlaneCentralStatus) []*dbapi.DataPlaneCentralStatus {
+func ConvertDataPlaneDinosaurStatus(status map[string]private.CentralStatus) []*dbapi.DataPlaneCentralStatus {
 	res := make([]*dbapi.DataPlaneCentralStatus, 0, len(status))
 
 	for k, v := range status {

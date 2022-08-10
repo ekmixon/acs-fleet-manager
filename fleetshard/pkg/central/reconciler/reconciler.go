@@ -13,8 +13,8 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stackrox/acs-fleet-manager/fleetshard/pkg/k8s"
 	"github.com/stackrox/acs-fleet-manager/fleetshard/pkg/util"
+	private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 	centralConstants "github.com/stackrox/acs-fleet-manager/internal/dinosaur/constants"
-	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
 	"github.com/stackrox/rox/operator/apis/platform/v1alpha1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -48,7 +48,7 @@ type CentralReconciler struct {
 // It tries to create a namespace for the Central and applies necessary updates to the resource.
 // TODO(create-ticket): Check correct Central gets reconciled
 // TODO(create-ticket): Should an initial ManagedCentral be added on reconciler creation?
-func (r *CentralReconciler) Reconcile(ctx context.Context, remoteCentral private.ManagedCentral) (*private.DataPlaneCentralStatus, error) {
+func (r *CentralReconciler) Reconcile(ctx context.Context, remoteCentral private.ManagedCentral) (*private.CentralStatus, error) {
 	// Only allow to start reconcile function once
 	if !atomic.CompareAndSwapInt32(r.status, FreeStatus, BlockedStatus) {
 		return nil, errors.New("Reconciler still busy, skipping reconciliation attempt.")
@@ -171,7 +171,7 @@ func (r *CentralReconciler) Reconcile(ctx context.Context, remoteCentral private
 	return r.readyStatus(ctx, remoteCentralNamespace)
 }
 
-func (r *CentralReconciler) readyStatus(ctx context.Context, namespace string) (*private.DataPlaneCentralStatus, error) {
+func (r *CentralReconciler) readyStatus(ctx context.Context, namespace string) (*private.CentralStatus, error) {
 	status := readyStatus()
 	if r.useRoutes {
 		routesStatuses, err := r.getRoutesStatuses(ctx, namespace)
@@ -183,7 +183,7 @@ func (r *CentralReconciler) readyStatus(ctx context.Context, namespace string) (
 	return status, nil
 }
 
-func (r *CentralReconciler) getRoutesStatuses(ctx context.Context, namespace string) ([]private.DataPlaneCentralStatusRoutes, error) {
+func (r *CentralReconciler) getRoutesStatuses(ctx context.Context, namespace string) ([]*private.CentralRoute, error) {
 	reencryptIngress, err := r.routeService.FindReencryptIngress(ctx, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("obtaining ingress for reencrypt route: %w", err)
@@ -192,14 +192,15 @@ func (r *CentralReconciler) getRoutesStatuses(ctx context.Context, namespace str
 	if err != nil {
 		return nil, fmt.Errorf("obtaining ingress for passthrough route: %w", err)
 	}
-	return []private.DataPlaneCentralStatusRoutes{
+
+	return []*private.CentralRoute{
 		getRouteStatus(reencryptIngress),
 		getRouteStatus(passthroughIngress),
 	}, nil
 }
 
-func getRouteStatus(ingress *openshiftRouteV1.RouteIngress) private.DataPlaneCentralStatusRoutes {
-	return private.DataPlaneCentralStatusRoutes{
+func getRouteStatus(ingress *openshiftRouteV1.RouteIngress) *private.CentralRoute {
+	return &private.CentralRoute{
 		Domain: ingress.Host,
 		Router: ingress.RouterCanonicalHostname,
 	}

@@ -12,7 +12,7 @@ import (
 	"github.com/pkg/errors"
 	"github.com/stackrox/acs-fleet-manager/fleetshard/config"
 	"github.com/stackrox/acs-fleet-manager/fleetshard/pkg/fleetmanager"
-	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
+	private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 	"github.com/stackrox/rox/pkg/concurrency"
 	"k8s.io/apimachinery/pkg/util/wait"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -37,7 +37,7 @@ type Runtime struct {
 	client           fleetmanager.Client
 	reconcilers      reconcilerRegistry // TODO(create-ticket): possible leak. consider reconcilerRegistry cleanup
 	k8sClient        ctrlClient.Client
-	statusResponseCh chan private.DataPlaneCentralStatus
+	statusResponseCh chan private.CentralStatus
 }
 
 // NewRuntime creates a new runtime
@@ -105,7 +105,7 @@ func (r *Runtime) Start() error {
 	return nil
 }
 
-func (r *Runtime) handleReconcileResult(central private.ManagedCentral, status *private.DataPlaneCentralStatus, err error) {
+func (r *Runtime) handleReconcileResult(central private.ManagedCentral, status *private.CentralStatus, err error) {
 	if err != nil {
 		glog.Errorf("error occurred %s/%s: %s", central.Metadata.Namespace, central.Metadata.Name, err.Error())
 		return

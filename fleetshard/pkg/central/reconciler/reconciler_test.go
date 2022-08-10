@@ -10,8 +10,8 @@ import (
 	openshiftRouteV1 "github.com/openshift/api/route/v1"
 	"github.com/stackrox/acs-fleet-manager/fleetshard/pkg/testutils"
 	"github.com/stackrox/acs-fleet-manager/fleetshard/pkg/util"
+	private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 	centralConstants "github.com/stackrox/acs-fleet-manager/internal/dinosaur/constants"
-	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
 	"github.com/stackrox/rox/operator/apis/platform/v1alpha1"
 
 	"github.com/stretchr/testify/assert"
@@ -31,24 +31,24 @@ const (
 )
 
 var simpleManagedCentral = private.ManagedCentral{
-	Metadata: private.ManagedCentralAllOfMetadata{
+	Metadata: &private.ManagedCentralMetadata{
 		Name:      centralName,
 		Namespace: centralNamespace,
 	},
-	Spec: private.ManagedCentralAllOfSpec{
-		UiEndpoint: private.ManagedCentralAllOfSpecUiEndpoint{
+	Spec: &private.ManagedCentralSpec{
+		UiEndpoint: &private.ManagedCentralSpecUiEndpoint{
 			Host: fmt.Sprintf("acs-%s.acs.rhcloud.test", centralID),
 		},
-		DataEndpoint: private.ManagedCentralAllOfSpecDataEndpoint{
+		DataEndpoint: &private.ManagedCentralSpecDataEndpoint{
 			Host: fmt.Sprintf("acs-data-%s.acs.rhcloud.test", centralID),
 		},
 	},
 }
 
-func conditionForType(conditions []private.DataPlaneClusterUpdateStatusRequestConditions, conditionType string) (*private.DataPlaneClusterUpdateStatusRequestConditions, bool) {
+func conditionForType(conditions []*private.Condition, conditionType string) (*private.Condition, bool) {
 	for _, c := range conditions {
 		if c.Type == conditionType {
-			return &c, true
+			return c, true
 		}
 	}
 	return nil, false
@@ -245,8 +245,8 @@ func TestCentralChanged(t *testing.T) {
 			lastCentral: &simpleManagedCentral,
 			currentCentral: private.ManagedCentral{
 				Metadata: simpleManagedCentral.Metadata,
-				Spec: private.ManagedCentralAllOfSpec{
-					UiEndpoint: private.ManagedCentralAllOfSpecUiEndpoint{
+				Spec: &private.ManagedCentralSpec{
+					UiEndpoint: &private.ManagedCentralSpecUiEndpoint{
 						Host: "central.cluster.local",
 					},
 				},
@@ -281,7 +281,7 @@ func TestReportRoutesStatuses(t *testing.T) {
 	status, err := r.Reconcile(context.TODO(), simpleManagedCentral)
 	require.NoError(t, err)
 
-	expected := []private.DataPlaneCentralStatusRoutes{
+	expected := []private.CentralRoute{
 		{
 			Domain: "acs-cb45idheg5ip6dq1jo4g.acs.rhcloud.test",
 			Router: "router-default.apps.test.local",
@@ -307,7 +307,7 @@ func TestReportRoutesStatusWhenCentralNotChanged(t *testing.T) {
 	existingCentral.RequestStatus = centralConstants.DinosaurRequestStatusReady.String()
 	status, _ := r.Reconcile(context.TODO(), existingCentral) // cache hit
 	// then
-	expected := []private.DataPlaneCentralStatusRoutes{
+	expected := []private.CentralRoute{
 		{
 			Domain: "acs-cb45idheg5ip6dq1jo4g.acs.rhcloud.test",
 			Router: "router-default.apps.test.local",

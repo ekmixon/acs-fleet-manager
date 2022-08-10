@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/compat"
-	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +21,7 @@ func (n noAuth) AddAuth(_ *http.Request) error {
 func TestClientGetManagedCentralList(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Contains(t, request.RequestURI, "/api/rhacs/v1/agent-clusters/cluster-id/centrals")
-		bytes, err := json.Marshal(private.ManagedCentralList{})
+		bytes, err := json.Marshal([]private.ManagedCentral{})
 		require.NoError(t, err)
 		_, err = writer.Write(bytes)
 		require.NoError(t, err)
@@ -33,7 +33,7 @@ func TestClientGetManagedCentralList(t *testing.T) {
 
 	result, err := client.GetManagedCentralList()
 	require.NoError(t, err)
-	assert.Equal(t, &private.ManagedCentralList{}, result)
+	assert.Equal(t, []private.ManagedCentral{}, result)
 }
 
 func TestClientReturnsError(t *testing.T) {
@@ -66,6 +66,6 @@ func TestClientUpdateStatus(t *testing.T) {
 	client, err := NewRESTClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
-	err = client.UpdateStatus("123", private.DataPlaneCentralStatus{})
+	err = client.UpdateStatus("123", private.CentralStatus{})
 	require.NoError(t, err)
 }

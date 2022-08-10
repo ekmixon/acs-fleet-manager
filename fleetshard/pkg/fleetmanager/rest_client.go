@@ -9,8 +9,8 @@ import (
 
 	"github.com/golang/glog"
 	"github.com/pkg/errors"
+	private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/compat"
-	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/public"
 )
 
@@ -56,19 +56,19 @@ func (c *RESTClient) GetManagedCentralList() ([]private.ManagedCentral, error) {
 		return nil, err
 	}
 
-	list := &private.ManagedCentralList{}
+	var list *[]private.ManagedCentral
 	err = c.unmarshalResponse(resp, &list)
 	if err != nil {
 		return nil, errors.Wrapf(err, "calling %s", c.fleetshardAPIEndpoint)
 	}
 
-	return list.Items, nil
+	return *list, nil
 }
 
 // UpdateStatus batch updates the status of managed centrals. The status param takes a map of DataPlaneCentralStatus indexed by
 // the Centrals ID.
-func (c *RESTClient) UpdateStatus(id string, status private.DataPlaneCentralStatus) error {
-	updateBody, err := json.Marshal(map[string]private.DataPlaneCentralStatus{
+func (c *RESTClient) UpdateStatus(id string, status private.CentralStatus) error {
+	updateBody, err := json.Marshal(map[string]private.CentralStatus{
 		id: status,
 	})
 	if err != nil {
