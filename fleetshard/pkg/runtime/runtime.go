@@ -61,8 +61,8 @@ func NewRuntime(config *config.Config, k8sClient ctrlClient.Client) (*Runtime, e
 
 func newClient(config *config.Config, auth fleetmanager.Auth) (fleetmanager.Client, error) {
 	switch config.Transport {
-	case "rest":
-		return fleetmanager.NewRESTClient(config.FleetManagerEndpoint, config.ClusterID, auth) //nolint:wrapcheck
+	case "http":
+		return fleetmanager.NewHTTPClient(config.FleetManagerEndpoint, config.ClusterID, auth) //nolint:wrapcheck
 	case "grpc":
 		return fleetmanager.NewGRPCClient(config.FleetManagerEndpoint, config.ClusterID) //nolint:wrapcheck
 	default:

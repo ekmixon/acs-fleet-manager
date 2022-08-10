@@ -29,7 +29,7 @@ func TestClientGetManagedCentralList(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client, err := NewRESTClient(ts.URL, "cluster-id", &noAuth{})
+	client, err := NewHTTPClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
 	result, err := client.GetManagedCentralList(context.TODO())
@@ -50,7 +50,7 @@ func TestClientReturnsError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client, err := NewRESTClient(ts.URL, "cluster-id", &noAuth{})
+	client, err := NewHTTPClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
 	_, err = client.GetManagedCentralList(context.TODO())
@@ -64,7 +64,7 @@ func TestClientUpdateStatus(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client, err := NewRESTClient(ts.URL, "cluster-id", &noAuth{})
+	client, err := NewHTTPClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
 	err = client.UpdateStatus(context.TODO(), "123", &private.CentralStatus{})

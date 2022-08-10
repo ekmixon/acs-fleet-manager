@@ -22,10 +22,10 @@ const (
 	publicCentralURI = "api/rhacs/v1/centrals"
 )
 
-var _ Client = (*RESTClient)(nil)
+var _ Client = (*HTTPClient)(nil)
 
-// RESTClient represents the REST client for connecting to fleet-manager
-type RESTClient struct {
+// HTTPClient represents the REST client for connecting to fleet-manager
+type HTTPClient struct {
 	client                http.Client
 	auth                  Auth
 	clusterID             string
@@ -33,8 +33,8 @@ type RESTClient struct {
 	consoleAPIEndpoint    string
 }
 
-// NewRESTClient creates a new client
-func NewRESTClient(endpoint string, clusterID string, auth Auth) (*RESTClient, error) {
+// NewHTTPClient creates a new client
+func NewHTTPClient(endpoint string, clusterID string, auth Auth) (*HTTPClient, error) {
 	if clusterID == "" {
 		return nil, errors.New("cluster id is empty")
 	}
@@ -43,7 +43,7 @@ func NewRESTClient(endpoint string, clusterID string, auth Auth) (*RESTClient, e
 		return nil, errors.New("fleetshardAPIEndpoint is empty")
 	}
 
-	return &RESTClient{
+	return &HTTPClient{
 		client:                http.Client{},
 		clusterID:             clusterID,
 		auth:                  auth,
@@ -53,7 +53,7 @@ func NewRESTClient(endpoint string, clusterID string, auth Auth) (*RESTClient, e
 }
 
 // GetManagedCentralList returns a list of centrals from fleet-manager which should be managed by this fleetshard.
-func (c *RESTClient) GetManagedCentralList(_ context.Context) ([]*private.ManagedCentral, error) {
+func (c *HTTPClient) GetManagedCentralList(_ context.Context) ([]*private.ManagedCentral, error) {
 	resp, err := c.newRequest(http.MethodGet, c.fleetshardAPIEndpoint, &bytes.Buffer{})
 	if err != nil {
 		return nil, err
@@ -70,7 +70,7 @@ func (c *RESTClient) GetManagedCentralList(_ context.Context) ([]*private.Manage
 
 // UpdateStatus batch updates the status of managed centrals. The status param takes a map of DataPlaneCentralStatus indexed by
 // the Centrals ID.
-func (c *RESTClient) UpdateStatus(_ context.Context, id string, status *private.CentralStatus) error {
+func (c *HTTPClient) UpdateStatus(_ context.Context, id string, status *private.CentralStatus) error {
 	updateBody, err := json.Marshal(map[string]private.CentralStatus{
 		id: *status,
 	})
@@ -90,7 +90,7 @@ func (c *RESTClient) UpdateStatus(_ context.Context, id string, status *private.
 }
 
 // CreateCentral creates a central from the public fleet-manager API
-func (c *RESTClient) CreateCentral(request public.CentralRequestPayload) (*public.CentralRequest, error) {
+func (c *HTTPClient) CreateCentral(request public.CentralRequestPayload) (*public.CentralRequest, error) {
 	reqBody, err := json.Marshal(request)
 	if err != nil {
 		return nil, fmt.Errorf("marshalling request for central creation: %w", err)
@@ -110,7 +110,7 @@ func (c *RESTClient) CreateCentral(request public.CentralRequestPayload) (*publi
 }
 
 // GetCentral returns a Central from the public fleet-manager API
-func (c *RESTClient) GetCentral(id string) (*public.CentralRequest, error) {
+func (c *HTTPClient) GetCentral(id string) (*public.CentralRequest, error) {
 	resp, err := c.newRequest(http.MethodGet, fmt.Sprintf("%s/%s", c.consoleAPIEndpoint, id), nil)
 	if err != nil {
 		return nil, err
@@ -126,7 +126,7 @@ func (c *RESTClient) GetCentral(id string) (*public.CentralRequest, error) {
 }
 
 // DeleteCentral deletes a central from the public fleet-manager API
-func (c *RESTClient) DeleteCentral(id string) error {
+func (c *HTTPClient) DeleteCentral(id string) error {
 	resp, err := c.newRequest(http.MethodDelete, fmt.Sprintf("%s/%s?async=true", c.consoleAPIEndpoint, id), nil)
 	if err != nil {
 		return err
@@ -139,7 +139,7 @@ func (c *RESTClient) DeleteCentral(id string) error {
 	return nil
 }
 
-func (c *RESTClient) newRequest(method string, url string, body io.Reader) (*http.Response, error) {
+func (c *HTTPClient) newRequest(method string, url string, body io.Reader) (*http.Response, error) {
 	glog.Infof("Send request to %s", url)
 	r, err := http.NewRequest(method, url, body)
 	if err != nil {
@@ -159,7 +159,7 @@ func (c *RESTClient) newRequest(method string, url string, body io.Reader) (*htt
 // unmarshalResponse unmarshalls a fleet-manager response. It returns an error if
 // fleet-manager returns errors from its API.
 // If the value v is nil the response is not marshalled into a struct, instead only checked for an API error.
-func (c *RESTClient) unmarshalResponse(resp *http.Response, v interface{}) error {
+func (c *HTTPClient) unmarshalResponse(resp *http.Response, v interface{}) error {
 	defer func() { _ = resp.Body.Close() }()
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -199,7 +199,7 @@ func (c *RESTClient) unmarshalResponse(resp *http.Response, v interface{}) error
 }
 
 // Close closes idle connections
-func (c *RESTClient) Close() error {
+func (c *HTTPClient) Close() error {
 	c.client.CloseIdleConnections()
 	return nil
 }
