@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -69,7 +70,7 @@ var _ = Describe("AuthN/Z Fleet* components", func() {
 		case publicAPI:
 			_, err = client.ListCentrals()
 		case internalAPI:
-			_, err = client.GetManagedCentralList()
+			_, err = client.GetManagedCentralList(context.TODO())
 		case adminAPI:
 			_, err = client.ListAdminAPI()
 		default:

@@ -1,6 +1,7 @@
 package fleetmanager
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -31,7 +32,7 @@ func TestClientGetManagedCentralList(t *testing.T) {
 	client, err := NewRESTClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
-	result, err := client.GetManagedCentralList()
+	result, err := client.GetManagedCentralList(context.TODO())
 	require.NoError(t, err)
 	assert.Equal(t, []private.ManagedCentral{}, result)
 }
@@ -52,7 +53,7 @@ func TestClientReturnsError(t *testing.T) {
 	client, err := NewRESTClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
-	_, err = client.GetManagedCentralList()
+	_, err = client.GetManagedCentralList(context.TODO())
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "some reason")
 }
@@ -66,6 +67,6 @@ func TestClientUpdateStatus(t *testing.T) {
 	client, err := NewRESTClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
-	err = client.UpdateStatus("123", private.CentralStatus{})
+	err = client.UpdateStatus(context.TODO(), "123", &private.CentralStatus{})
 	require.NoError(t, err)
 }

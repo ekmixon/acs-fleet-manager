@@ -19,6 +19,7 @@ type Config struct {
 	OCMRefreshToken      string        `env:"OCM_TOKEN"`
 	StaticToken          string        `env:"STATIC_TOKEN"`
 	CreateAuthProvider   bool          `env:"CREATE_AUTH_PROVIDER" envDefault:"false"`
+	Transport            string        `env:"TRANSPORT" envDefault:"rest"`
 }
 
 // GetConfig retrieves the current runtime configuration from the environment and returns it.

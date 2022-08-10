@@ -2,6 +2,7 @@ package fleetmanager
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -20,6 +21,8 @@ const (
 
 	publicCentralURI = "api/rhacs/v1/centrals"
 )
+
+var _ Client = (*RESTClient)(nil)
 
 // RESTClient represents the REST client for connecting to fleet-manager
 type RESTClient struct {
@@ -50,7 +53,7 @@ func NewRESTClient(endpoint string, clusterID string, auth Auth) (*RESTClient, e
 }
 
 // GetManagedCentralList returns a list of centrals from fleet-manager which should be managed by this fleetshard.
-func (c *RESTClient) GetManagedCentralList() ([]private.ManagedCentral, error) {
+func (c *RESTClient) GetManagedCentralList(_ context.Context) ([]*private.ManagedCentral, error) {
 	resp, err := c.newRequest(http.MethodGet, c.fleetshardAPIEndpoint, &bytes.Buffer{})
 	if err != nil {
 		return nil, err
@@ -67,9 +70,9 @@ func (c *RESTClient) GetManagedCentralList() ([]private.ManagedCentral, error) {
 
 // UpdateStatus batch updates the status of managed centrals. The status param takes a map of DataPlaneCentralStatus indexed by
 // the Centrals ID.
-func (c *RESTClient) UpdateStatus(id string, status private.CentralStatus) error {
+func (c *RESTClient) UpdateStatus(_ context.Context, id string, status *private.CentralStatus) error {
 	updateBody, err := json.Marshal(map[string]private.CentralStatus{
-		id: status,
+		id: *status,
 	})
 	if err != nil {
 		return fmt.Errorf("marshalling data-plane central status: %w", err)
@@ -195,7 +198,13 @@ func (c *RESTClient) unmarshalResponse(resp *http.Response, v interface{}) error
 	return nil
 }
 
+// Close closes idle connections
+func (c *RESTClient) Close() error {
+	c.client.CloseIdleConnections()
+	return nil
+}
+
 type managedCentralList struct {
 	Kind  string
-	Items []private.ManagedCentral
+	Items []*private.ManagedCentral
 }

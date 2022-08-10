@@ -46,8 +46,7 @@ func NewRuntime(config *config.Config, k8sClient ctrlClient.Client) (*Runtime, e
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create fleet manager authentication")
 	}
-	client, err := fleetmanager.NewRESTClient(config.FleetManagerEndpoint, config.ClusterID,
-		auth)
+	client, err := newClient(config, auth)
 	if err != nil {
 		return nil, errors.Wrap(err, "failed to create fleet manager client")
 	}
@@ -60,19 +59,35 @@ func NewRuntime(config *config.Config, k8sClient ctrlClient.Client) (*Runtime, e
 	}, nil
 }
 
+func newClient(config *config.Config, auth fleetmanager.Auth) (fleetmanager.Client, error) {
+	switch config.Transport {
+	case "rest":
+		return fleetmanager.NewRESTClient(config.FleetManagerEndpoint, config.ClusterID, auth) //nolint:wrapcheck
+	case "grpc":
+		return fleetmanager.NewGRPCClient(config.FleetManagerEndpoint, config.ClusterID) //nolint:wrapcheck
+	default:
+		return nil, fmt.Errorf("unsupported transport %s", config.Transport)
+	}
+}
+
 // Stop stops the runtime
 func (r *Runtime) Stop() {
+	glog.Info("Stopping runtime")
+	if err := r.client.Close(); err != nil {
+		glog.Errorf("unexpected error during runtime stop %v", err)
+	}
 }
 
 // Start starts the fleetshard runtime and schedules
 func (r *Runtime) Start() error {
 	glog.Infof("fleetshard runtime started")
 	glog.Infof("Auth provider initialisation enabled: %v", r.config.CreateAuthProvider)
+	glog.Infof("Transport: %s", r.config.Transport)
 
 	routesAvailable := routesAvailable()
 
 	ticker := concurrency.NewRetryTicker(func(ctx context.Context) (timeToNextTick time.Duration, err error) {
-		list, err := r.client.GetManagedCentralList()
+		list, err := r.client.GetManagedCentralList(ctx)
 		if err != nil {
 			err = errors.Wrapf(err, "retrieving list of managed centrals")
 			glog.Error(err)
@@ -83,15 +98,15 @@ func (r *Runtime) Start() error {
 		glog.Infof("Received %d centrals", len(list))
 		for _, central := range list {
 			if _, ok := r.reconcilers[central.Id]; !ok {
-				r.reconcilers[central.Id] = centralReconciler.NewCentralReconciler(r.k8sClient, central, routesAvailable, r.config.CreateAuthProvider)
+				r.reconcilers[central.Id] = centralReconciler.NewCentralReconciler(r.k8sClient, *central, routesAvailable, r.config.CreateAuthProvider)
 			}
 
 			reconciler := r.reconcilers[central.Id]
 			go func(reconciler *centralReconciler.CentralReconciler, central private.ManagedCentral) {
 				glog.Infof("Start reconcile central %s/%s", central.Metadata.Namespace, central.Metadata.Name)
 				status, err := reconciler.Reconcile(context.Background(), central)
-				r.handleReconcileResult(central, status, err)
-			}(reconciler, central)
+				r.handleReconcileResult(ctx, central, status, err)
+			}(reconciler, *central)
 		}
 
 		return r.config.RuntimePollPeriod, nil
@@ -105,7 +120,7 @@ func (r *Runtime) Start() error {
 	return nil
 }
 
-func (r *Runtime) handleReconcileResult(central private.ManagedCentral, status *private.CentralStatus, err error) {
+func (r *Runtime) handleReconcileResult(ctx context.Context, central private.ManagedCentral, status *private.CentralStatus, err error) {
 	if err != nil {
 		glog.Errorf("error occurred %s/%s: %s", central.Metadata.Namespace, central.Metadata.Name, err.Error())
 		return
@@ -115,7 +130,7 @@ func (r *Runtime) handleReconcileResult(central private.ManagedCentral, status *
 		return
 	}
 
-	err = r.client.UpdateStatus(central.Id, *status)
+	err = r.client.UpdateStatus(ctx, central.Id, status)
 	if err != nil {
 		err = errors.Wrapf(err, "updating status for Central %s/%s", central.Metadata.Namespace, central.Metadata.Name)
 		glog.Error(err)
