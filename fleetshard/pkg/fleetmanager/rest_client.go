@@ -56,13 +56,13 @@ func (c *RESTClient) GetManagedCentralList() ([]private.ManagedCentral, error) {
 		return nil, err
 	}
 
-	var list []private.ManagedCentral
+	var list managedCentralList
 	err = c.unmarshalResponse(resp, &list)
 	if err != nil {
 		return nil, errors.Wrapf(err, "calling %s", c.fleetshardAPIEndpoint)
 	}
 
-	return list, nil
+	return list.Items, nil
 }
 
 // UpdateStatus batch updates the status of managed centrals. The status param takes a map of DataPlaneCentralStatus indexed by
@@ -193,4 +193,9 @@ func (c *RESTClient) unmarshalResponse(resp *http.Response, v interface{}) error
 		return fmt.Errorf("unmarshalling HTTP response as %T: %w", v, err)
 	}
 	return nil
+}
+
+type managedCentralList struct {
+	Kind  string
+	Items []private.ManagedCentral
 }

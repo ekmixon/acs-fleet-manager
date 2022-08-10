@@ -59,15 +59,23 @@ func (h *dataPlaneDinosaurHandler) GetAll(w http.ResponseWriter, r *http.Request
 				return nil, err
 			}
 
-			var managedDinosaurList []private.ManagedCentral
+			managedCentralList := managedCentralList{
+				Kind:  "ManagedCentralList",
+				Items: []private.ManagedCentral{},
+			}
 
 			for i := range centralRequests {
 				converted := h.presenter.PresentManagedCentral(centralRequests[i])
-				managedDinosaurList = append(managedDinosaurList, converted)
+				managedCentralList.Items = append(managedCentralList.Items, converted)
 			}
-			return managedDinosaurList, nil
+			return managedCentralList, nil
 		},
 	}
 
 	handlers.HandleGet(w, r, cfg)
+}
+
+type managedCentralList struct {
+	Kind  string
+	Items []private.ManagedCentral
 }
