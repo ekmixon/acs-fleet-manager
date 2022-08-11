@@ -50,7 +50,11 @@ func (c *GRPCClient) UpdateStatus(ctx context.Context, id string, status *privat
 		},
 	}
 	_, err := c.client.UpdateCentralStatus(ctx, statusUpdate) // TODO(create-ticket): handle error response?
-	return errors.Wrapf(err, "update central status")
+	if err != nil {
+		return errors.Wrapf(err, "update central status")
+	}
+
+	return nil
 }
 
 // Close closes gRPC connection

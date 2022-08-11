@@ -130,7 +130,7 @@ func (r *Runtime) handleReconcileResult(ctx context.Context, central private.Man
 		return
 	}
 
-	err = r.client.UpdateStatus(ctx, central.Id, status)
+	err = r.client.UpdateStatus(context.Background(), central.Id, status)
 	if err != nil {
 		err = errors.Wrapf(err, "updating status for Central %s/%s", central.Metadata.Namespace, central.Metadata.Name)
 		glog.Error(err)

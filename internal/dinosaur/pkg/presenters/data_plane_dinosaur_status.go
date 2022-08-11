@@ -69,13 +69,19 @@ func ConvertDataPlaneDinosaurStatusFromGRPC(from *private.UpdateCentralStatusReq
 				})
 			}
 		}
-		res = append(res, &dbapi.DataPlaneCentralStatus{
-			CentralClusterID:       k,
-			Conditions:             c,
-			Routes:                 routes,
-			CentralVersion:         v.Versions.Central,
-			CentralOperatorVersion: v.Versions.CentralOperator,
-		})
+
+		dbStatus := &dbapi.DataPlaneCentralStatus{
+			CentralClusterID: k,
+			Conditions:       c,
+			Routes:           routes,
+		}
+
+		if v.Versions != nil {
+			dbStatus.CentralVersion = v.Versions.Central
+			dbStatus.CentralOperatorVersion = v.Versions.CentralOperator
+		}
+
+		res = append(res, dbStatus)
 	}
 
 	return res
