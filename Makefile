@@ -1,3 +1,5 @@
+include make/protogen.mk
+
 MKFILE_PATH := $(abspath $(lastword $(MAKEFILE_LIST)))
 PROJECT_PATH := $(patsubst %/,%,$(dir $(MKFILE_PATH)))
 DOCS_DIR := $(PROJECT_PATH)/docs
@@ -405,6 +407,18 @@ openapi/generate/admin: go-bindata openapi-generator
 	$(OPENAPI_GENERATOR) generate -i openapi/fleet-manager-private-admin.yaml -g go -o internal/dinosaur/pkg/api/admin/private --package-name private -t openapi/templates --ignore-file-override ./.openapi-generator-ignore
 	$(GOFMT) -w internal/dinosaur/pkg/api/admin/private
 .PHONY: openapi/generate/admin
+
+proto-generated-srcs: clean-proto-generated-srcs $(GENERATED_PB_SRCS)
+	@echo "+ $@"
+
+clean-proto-generated-srcs:
+	@echo "+ $@"
+	git clean -xdf generated
+
+.PHONY: clean-obsolete-protos
+clean-obsolete-protos:
+	@echo "+ $@"
+	$(BASE_DIR)/tools/clean_autogen_protos.py --protos $(BASE_DIR)/proto --generated $(BASE_DIR)/generated
 
 # clean up code and dependencies
 code/fix:

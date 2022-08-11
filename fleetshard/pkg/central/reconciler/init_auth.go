@@ -7,7 +7,7 @@ import (
 
 	"github.com/pkg/errors"
 	centralClientPkg "github.com/stackrox/acs-fleet-manager/fleetshard/pkg/central/client"
-	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
+	private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 	"github.com/stackrox/rox/generated/storage"
 	"github.com/stackrox/rox/pkg/ternary"
 	core "k8s.io/api/core/v1"
@@ -21,8 +21,8 @@ const (
 )
 
 var (
-	groupCreators = []func(providerId string, auth private.ManagedCentralAllOfSpecAuth) *storage.Group{
-		func(providerId string, auth private.ManagedCentralAllOfSpecAuth) *storage.Group {
+	groupCreators = []func(providerId string, auth *private.ManagedCentralSpecAuth) *storage.Group{
+		func(providerId string, auth *private.ManagedCentralSpecAuth) *storage.Group {
 			return &storage.Group{
 				Props: &storage.GroupProperties{
 					AuthProviderId: providerId,
@@ -30,7 +30,7 @@ var (
 				RoleName: "None",
 			}
 		},
-		func(providerId string, auth private.ManagedCentralAllOfSpecAuth) *storage.Group {
+		func(providerId string, auth *private.ManagedCentralSpecAuth) *storage.Group {
 			return &storage.Group{
 				Props: &storage.GroupProperties{
 					AuthProviderId: providerId,
@@ -40,7 +40,7 @@ var (
 				RoleName: "Admin",
 			}
 		},
-		func(providerId string, auth private.ManagedCentralAllOfSpecAuth) *storage.Group {
+		func(providerId string, auth *private.ManagedCentralSpecAuth) *storage.Group {
 			return &storage.Group{
 				Props: &storage.GroupProperties{
 					AuthProviderId: providerId,

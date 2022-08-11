@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-package fleetmanager;
+package private;
 
-option go_package = "github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private/grpc";
+option go_package = "private";
 
 message CentralVersions {
     string central = 1;
@@ -17,7 +17,7 @@ message Condition {
     string lastTransitionTime = 5;
 }
 
-message Routes {
+message CentralRoute {
     string domain = 1;
     string router = 2;
 }
@@ -25,7 +25,7 @@ message Routes {
 message CentralStatus {
     repeated Condition conditions = 1;
     CentralVersions versions = 2;
-    repeated Routes routes = 3;
+    repeated CentralRoute routes = 3;
 }
 
 message UpdateCentralStatusRequest {

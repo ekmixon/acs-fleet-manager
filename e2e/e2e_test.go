@@ -34,7 +34,7 @@ const (
 
 // TODO(ROX-11465): Use correct OCM_TOKEN for different clients (console.redhat.com, fleetshard)
 var _ = Describe("Central", func() {
-	var client *fleetmanager.RESTClient
+	var client *fleetmanager.HTTPClient
 
 	BeforeEach(func() {
 		authType := "OCM"
@@ -48,7 +48,7 @@ var _ = Describe("Central", func() {
 
 		auth, err := fleetmanager.NewAuth(authType)
 		Expect(err).ToNot(HaveOccurred())
-		client, err = fleetmanager.NewRESTClient(fleetManagerEndpoint, "cluster-id", auth)
+		client, err = fleetmanager.NewHTTPClient(fleetManagerEndpoint, "cluster-id", auth)
 		Expect(err).ToNot(HaveOccurred())
 	})
 
@@ -222,14 +222,14 @@ var _ = Describe("Central", func() {
 	})
 })
 
-func getCentral(createdCentral *public.CentralRequest, client *fleetmanager.RESTClient) *public.CentralRequest {
+func getCentral(createdCentral *public.CentralRequest, client *fleetmanager.HTTPClient) *public.CentralRequest {
 	Expect(createdCentral).NotTo(BeNil())
 	central, err := client.GetCentral(createdCentral.Id)
 	Expect(err).To(BeNil())
 	return central
 }
 
-func centralStatus(createdCentral *public.CentralRequest, client *fleetmanager.RESTClient) string {
+func centralStatus(createdCentral *public.CentralRequest, client *fleetmanager.HTTPClient) string {
 	return getCentral(createdCentral, client).Status
 }
 

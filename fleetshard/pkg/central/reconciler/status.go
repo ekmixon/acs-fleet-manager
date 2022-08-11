@@ -1,10 +1,10 @@
 package reconciler
 
-import "github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
+import private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 
-func readyStatus() *private.DataPlaneCentralStatus {
-	return &private.DataPlaneCentralStatus{
-		Conditions: []private.DataPlaneClusterUpdateStatusRequestConditions{
+func readyStatus() *private.CentralStatus {
+	return &private.CentralStatus{
+		Conditions: []*private.Condition{
 			{
 				Type:   "Ready",
 				Status: "True",
@@ -13,9 +13,9 @@ func readyStatus() *private.DataPlaneCentralStatus {
 	}
 }
 
-func deletedStatus() *private.DataPlaneCentralStatus {
-	return &private.DataPlaneCentralStatus{
-		Conditions: []private.DataPlaneClusterUpdateStatusRequestConditions{
+func deletedStatus() *private.CentralStatus {
+	return &private.CentralStatus{
+		Conditions: []*private.Condition{
 			{
 				Type:   "Ready",
 				Status: "False",
@@ -25,9 +25,9 @@ func deletedStatus() *private.DataPlaneCentralStatus {
 	}
 }
 
-func installingStatus() *private.DataPlaneCentralStatus {
-	return &private.DataPlaneCentralStatus{
-		Conditions: []private.DataPlaneClusterUpdateStatusRequestConditions{
+func installingStatus() *private.CentralStatus {
+	return &private.CentralStatus{
+		Conditions: []*private.Condition{
 			{
 				Type:   "Ready",
 				Status: "False",

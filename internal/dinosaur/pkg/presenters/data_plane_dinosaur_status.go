@@ -1,13 +1,12 @@
 package presenters
 
 import (
+	private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/dbapi"
-	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
-	fmgrpc "github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private/grpc"
 )
 
 // ConvertDataPlaneDinosaurStatus ...
-func ConvertDataPlaneDinosaurStatus(status map[string]private.DataPlaneCentralStatus) []*dbapi.DataPlaneCentralStatus {
+func ConvertDataPlaneDinosaurStatus(status map[string]private.CentralStatus) []*dbapi.DataPlaneCentralStatus {
 	res := make([]*dbapi.DataPlaneCentralStatus, 0, len(status))
 
 	for k, v := range status {
@@ -30,20 +29,24 @@ func ConvertDataPlaneDinosaurStatus(status map[string]private.DataPlaneCentralSt
 				})
 			}
 		}
-		res = append(res, &dbapi.DataPlaneCentralStatus{
-			CentralClusterID:       k,
-			Conditions:             c,
-			Routes:                 routes,
-			CentralVersion:         v.Versions.Central,
-			CentralOperatorVersion: v.Versions.CentralOperator,
-		})
+
+		dbStatus := &dbapi.DataPlaneCentralStatus{
+			CentralClusterID: k,
+			Conditions:       c,
+			Routes:           routes,
+		}
+		if v.Versions != nil {
+			dbStatus.CentralVersion = v.Versions.Central
+			dbStatus.CentralOperatorVersion = v.Versions.CentralOperator
+		}
+		res = append(res, dbStatus)
 	}
 
 	return res
 }
 
 // ConvertDataPlaneDinosaurStatusFromGRPC converts GRPC requests to dbapi
-func ConvertDataPlaneDinosaurStatusFromGRPC(from *fmgrpc.UpdateCentralStatusRequest) []*dbapi.DataPlaneCentralStatus {
+func ConvertDataPlaneDinosaurStatusFromGRPC(from *private.UpdateCentralStatusRequest) []*dbapi.DataPlaneCentralStatus {
 	res := make([]*dbapi.DataPlaneCentralStatus, 0, len(from.Updates))
 
 	for k, v := range from.Updates {

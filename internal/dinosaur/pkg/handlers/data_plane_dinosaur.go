@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
+	private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/presenters"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/services"
 	"github.com/stackrox/acs-fleet-manager/pkg/handlers"
@@ -30,7 +30,7 @@ func NewDataPlaneDinosaurHandler(service services.DataPlaneDinosaurService, dino
 // UpdateDinosaurStatuses ...
 func (h *dataPlaneDinosaurHandler) UpdateDinosaurStatuses(w http.ResponseWriter, r *http.Request) {
 	clusterID := mux.Vars(r)["id"]
-	var data = map[string]private.DataPlaneCentralStatus{}
+	var data = map[string]private.CentralStatus{}
 
 	cfg := &handlers.HandlerConfig{
 		MarshalInto: &data,
@@ -59,18 +59,23 @@ func (h *dataPlaneDinosaurHandler) GetAll(w http.ResponseWriter, r *http.Request
 				return nil, err
 			}
 
-			managedDinosaurList := private.ManagedCentralList{
+			managedCentralList := managedCentralList{
 				Kind:  "ManagedCentralList",
 				Items: []private.ManagedCentral{},
 			}
 
 			for i := range centralRequests {
 				converted := h.presenter.PresentManagedCentral(centralRequests[i])
-				managedDinosaurList.Items = append(managedDinosaurList.Items, converted)
+				managedCentralList.Items = append(managedCentralList.Items, converted)
 			}
-			return managedDinosaurList, nil
+			return managedCentralList, nil
 		},
 	}
 
 	handlers.HandleGet(w, r, cfg)
+}
+
+type managedCentralList struct {
+	Kind  string
+	Items []private.ManagedCentral
 }

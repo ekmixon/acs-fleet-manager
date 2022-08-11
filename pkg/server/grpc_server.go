@@ -6,8 +6,8 @@ import (
 	"net"
 
 	"github.com/golang/glog"
+	private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/dbapi"
-	fmgrpc "github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private/grpc"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/presenters"
 	"github.com/stackrox/acs-fleet-manager/pkg/environments"
 	"github.com/stackrox/acs-fleet-manager/pkg/errors"
@@ -29,7 +29,7 @@ type DataPlaneCentralService interface {
 
 // GRPCServer exposes the gRPC API of fleet-manager
 type GRPCServer struct {
-	fmgrpc.UnimplementedFleetManagerPrivateServer
+	private.UnimplementedFleetManagerPrivateServer
 	listener                net.Listener
 	server                  *grpc.Server
 	presenter               *presenters.ManagedCentralPresenter
@@ -50,31 +50,32 @@ func NewGRPCServer(p *presenters.ManagedCentralPresenter, centralService Central
 }
 
 // UpdateCentralStatus handles requests to Update the status of centrals
-func (gsv *GRPCServer) UpdateCentralStatus(ctx context.Context, req *fmgrpc.UpdateCentralStatusRequest) (*fmgrpc.UpdateCentralStatusResponse, error) {
+func (gsv *GRPCServer) UpdateCentralStatus(ctx context.Context, req *private.UpdateCentralStatusRequest) (*private.UpdateCentralStatusResponse, error) {
 	dataPlaneDinosaurStatus := presenters.ConvertDataPlaneDinosaurStatusFromGRPC(req)
 	err := gsv.dataplaneCentralService.UpdateDataPlaneDinosaurService(ctx, req.AgentCluster, dataPlaneDinosaurStatus)
 	if err != nil {
 		glog.Error(err)
 		return nil, err
 	}
-	return &fmgrpc.UpdateCentralStatusResponse{}, nil
+	return &private.UpdateCentralStatusResponse{}, nil
 }
 
 // GetCentrals handles gRPC requests to get all central requests in the DB that are in correct state to be polled
 // for provisioning
-func (gsv *GRPCServer) GetCentrals(ctx context.Context, req *fmgrpc.GetCentralsRequest) (*fmgrpc.GetCentralsResponse, error) {
+func (gsv *GRPCServer) GetCentrals(ctx context.Context, req *private.GetCentralsRequest) (*private.GetCentralsResponse, error) {
 	dbCentrals, err := gsv.centralService.ListByClusterID(req.AgentCluster)
 	if err != nil {
 		glog.Error(err)
 		return nil, err
 	}
 
-	centrals := make([]*fmgrpc.ManagedCentral, 0, len(dbCentrals))
+	centrals := make([]*private.ManagedCentral, 0, len(dbCentrals))
 	for _, from := range dbCentrals {
-		centrals = append(centrals, gsv.presenter.PresentManagedCentralGRPC(from))
+		central := gsv.presenter.PresentManagedCentral(from)
+		centrals = append(centrals, &central)
 	}
 
-	return &fmgrpc.GetCentralsResponse{Centrals: centrals}, nil
+	return &private.GetCentralsResponse{Centrals: centrals}, nil
 }
 
 // Run starts running the GRPCServer sequentially
@@ -86,7 +87,7 @@ func (gsv *GRPCServer) Run() {
 
 	gsv.listener = listener
 	gsv.server = grpc.NewServer()
-	fmgrpc.RegisterFleetManagerPrivateServer(gsv.server, gsv)
+	private.RegisterFleetManagerPrivateServer(gsv.server, gsv)
 
 	gsv.Serve(listener)
 }

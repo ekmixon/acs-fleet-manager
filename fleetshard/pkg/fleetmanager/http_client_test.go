@@ -1,13 +1,14 @@
 package fleetmanager
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
+	private "github.com/stackrox/acs-fleet-manager/generated/privateapi"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/compat"
-	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -21,19 +22,19 @@ func (n noAuth) AddAuth(_ *http.Request) error {
 func TestClientGetManagedCentralList(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		assert.Contains(t, request.RequestURI, "/api/rhacs/v1/agent-clusters/cluster-id/centrals")
-		bytes, err := json.Marshal(private.ManagedCentralList{})
+		bytes, err := json.Marshal([]private.ManagedCentral{})
 		require.NoError(t, err)
 		_, err = writer.Write(bytes)
 		require.NoError(t, err)
 	}))
 	defer ts.Close()
 
-	client, err := NewRESTClient(ts.URL, "cluster-id", &noAuth{})
+	client, err := NewHTTPClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
-	result, err := client.GetManagedCentralList()
+	result, err := client.GetManagedCentralList(context.TODO())
 	require.NoError(t, err)
-	assert.Equal(t, &private.ManagedCentralList{}, result)
+	assert.Equal(t, []private.ManagedCentral{}, result)
 }
 
 func TestClientReturnsError(t *testing.T) {
@@ -49,10 +50,10 @@ func TestClientReturnsError(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client, err := NewRESTClient(ts.URL, "cluster-id", &noAuth{})
+	client, err := NewHTTPClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
-	_, err = client.GetManagedCentralList()
+	_, err = client.GetManagedCentralList(context.TODO())
 	require.Error(t, err)
 	assert.ErrorContains(t, err, "some reason")
 }
@@ -63,10 +64,9 @@ func TestClientUpdateStatus(t *testing.T) {
 	}))
 	defer ts.Close()
 
-	client, err := NewRESTClient(ts.URL, "cluster-id", &noAuth{})
+	client, err := NewHTTPClient(ts.URL, "cluster-id", &noAuth{})
 	require.NoError(t, err)
 
-	statuses := map[string]private.DataPlaneCentralStatus{}
-	err = client.UpdateStatus(statuses)
+	err = client.UpdateStatus(context.TODO(), "123", &private.CentralStatus{})
 	require.NoError(t, err)
 }
