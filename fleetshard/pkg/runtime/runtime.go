@@ -88,6 +88,17 @@ func (r *Runtime) Start() error {
 
 			reconciler := r.reconcilers[central.Id]
 			go func(reconciler *centralReconciler.CentralReconciler, central private.ManagedCentral) {
+				version, err := reconciler.GetCentralVersion()
+				if err != nil {
+					glog.Errorf("getting central version: %v", err)
+					return
+				}
+
+				if version != central.Spec.Versions.Central {
+					// upgrade impl
+					glog.Info("Start upgrading process")
+				}
+
 				glog.Infof("Start reconcile central %s/%s", central.Metadata.Namespace, central.Metadata.Name)
 				status, err := reconciler.Reconcile(context.Background(), central)
 				r.handleReconcileResult(central, status, err)

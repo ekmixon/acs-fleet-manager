@@ -45,15 +45,36 @@ type CentralReconciler struct {
 	routeService      *k8s.RouteService
 }
 
+// IsBusy returns true if the Reconcile method is currently running and false if not
+func (r *CentralReconciler) IsBusy() bool {
+	return !atomic.CompareAndSwapInt32(r.status, FreeStatus, BlockedStatus)
+}
+
+// Pause puts a pause annotation on the central CR
+func (r *CentralReconciler) Pause() error {
+	return errors.New("not implemented")
+}
+
+// Unpause removes pause annotation from central CR
+func (r *CentralReconciler) Unpause() error {
+	return errors.New("not implemented")
+}
+
+// GetCentralVersion query the current version of the stackrox operator from k8s and returns it
+func (r *CentralReconciler) GetCentralVersion() (string, error) {
+	return "", errors.New("not implemented")
+}
+
 // Reconcile takes a private.ManagedCentral and tries to install it into the cluster managed by the fleet-shard.
 // It tries to create a namespace for the Central and applies necessary updates to the resource.
 // TODO(create-ticket): Check correct Central gets reconciled
 // TODO(create-ticket): Should an initial ManagedCentral be added on reconciler creation?
 func (r *CentralReconciler) Reconcile(ctx context.Context, remoteCentral private.ManagedCentral) (*private.DataPlaneCentralStatus, error) {
 	// Only allow to start reconcile function once
-	if !atomic.CompareAndSwapInt32(r.status, FreeStatus, BlockedStatus) {
+	if r.IsBusy() {
 		return nil, ErrBusy
 	}
+
 	defer atomic.StoreInt32(r.status, FreeStatus)
 
 	changed, err := r.centralChanged(remoteCentral)
