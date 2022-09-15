@@ -58,3 +58,8 @@ logging:
   aws:
     accessKeyId: ""
     secretAccessKey: ""
+
+# See available parameters in charts/probe/values.yaml
+# - enabled flag is used to completely enable/disable probe sub-chart
+probe:
+  enabled: false

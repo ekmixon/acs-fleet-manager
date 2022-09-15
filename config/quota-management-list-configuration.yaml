@@ -48,3 +48,8 @@ registered_users_per_organisation:
     any_user: true
     max_allowed_instances: 3
     registered_users: []
+  # TODO: remove this again
+  - id: 16238026
+    any_user: true
+    max_allowed_instances: 25
+    registered_users: []

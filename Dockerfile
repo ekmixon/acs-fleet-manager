@@ -1,5 +1,6 @@
 FROM registry.access.redhat.com/ubi8/ubi-minimal:8.5
 
+# TODO: Add Dockerfile for probe. Prefer separate instead of shared image.
 COPY \
     fleet-manager \
     fleetshard-sync \
