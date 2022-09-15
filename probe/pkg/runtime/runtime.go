@@ -122,15 +122,17 @@ func newCentralName() (string, error) {
 	return fmt.Sprintf("probe-%s", rndString), nil
 }
 
-func (r *Runtime) getCentral() *public.CentralRequest {
-	central, _ := r.client.GetCentral(r.response.Id)
-	return central
-}
-
 func (r *Runtime) pollCentral(targetState string) error {
 	// TODO: Make timeout configurable. Use timeout context.
 	for i := 0; i < 100; i++ {
-		if r.getCentral().Status == targetState {
+		central, err := r.client.GetCentral(r.response.Id)
+		// TODO: Add retries
+		if err != nil {
+			return fmt.Errorf("Failed to get Central status: %w", err)
+		}
+		r.response = central
+
+		if r.response.Status == targetState {
 			glog.Infof("Central is in `%s` state.", targetState)
 			return nil
 		}
