@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
@@ -56,6 +57,8 @@ func NewRuntime(config *config.Config) (*Runtime, error) {
 
 // Run executes a probe run.
 func (r *Runtime) Run() error {
+	// TODO: Add total timeout
+	// TODO: Measure total runtime and expose as metric
 	metrics.MetricsInstance().IncStartedRuns()
 
 	// Create Central
@@ -68,7 +71,7 @@ func (r *Runtime) Run() error {
 	glog.Infof("Central creation requested: %+v\n", r.response)
 
 	// Poll ready state
-	err = r.pollCentral(constants.CentralRequestStatusReady.String())
+	err = r.ensureCentralState(constants.CentralRequestStatusReady.String())
 	if err != nil {
 		metrics.MetricsInstance().IncFailedRuns()
 		return err
@@ -82,14 +85,14 @@ func (r *Runtime) Run() error {
 		metrics.MetricsInstance().IncFailedRuns()
 		return fmt.Errorf("Central deletion failed: %w", err)
 	}
-	err = r.pollCentral(constants.CentralRequestStatusDeprovision.String())
+	err = r.ensureCentralState(constants.CentralRequestStatusDeprovision.String())
 	if err != nil {
 		metrics.MetricsInstance().IncFailedRuns()
 		return err
 	}
 
 	// Deleting
-	err = r.pollCentral(constants.CentralRequestStatusDeleting.String())
+	err = r.ensureCentralState(constants.CentralRequestStatusDeleting.String())
 	if err != nil {
 		metrics.MetricsInstance().IncFailedRuns()
 		return fmt.Errorf("Central did not reach deprovision state: %w\n", err)
@@ -122,21 +125,36 @@ func newCentralName() (string, error) {
 	return fmt.Sprintf("probe-%s", rndString), nil
 }
 
-func (r *Runtime) pollCentral(targetState string) error {
-	// TODO: Make timeout configurable. Use timeout context.
-	for i := 0; i < 100; i++ {
+func (r *Runtime) ensureCentralState(targetState string) error {
+	ctxTimeout, cancel := context.WithTimeout(context.Background(), r.config.RuntimePollTimeout)
+	defer cancel()
+
+	isSuccess := make(chan bool, 1)
+
+	go r.pollCentral(ctxTimeout, isSuccess, targetState)
+
+	select {
+	case <-ctxTimeout.Done():
+		return fmt.Errorf("Central did not reach %s state: %w", targetState, ctxTimeout.Err())
+	case <-isSuccess:
+		return nil
+	}
+}
+
+func (r *Runtime) pollCentral(ctx context.Context, isSuccess chan bool, targetState string) error {
+	for {
 		central, err := r.client.GetCentral(r.response.Id)
-		// TODO: Add retries
+		// TODO: Only retry when error is recoverable
 		if err != nil {
-			return fmt.Errorf("Failed to get Central status: %w", err)
+			continue
 		}
 		r.response = central
 
 		if r.response.Status == targetState {
 			glog.Infof("Central is in `%s` state.", targetState)
+			isSuccess <- true
 			return nil
 		}
 		time.Sleep(r.config.RuntimePollPeriod)
 	}
-	return fmt.Errorf("Central did not reach %s state.", targetState)
 }

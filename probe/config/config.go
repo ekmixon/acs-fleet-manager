@@ -16,6 +16,7 @@ type Config struct {
 	FleetManagerEndpoint string        `env:"FLEET_MANAGER_ENDPOINT" envDefault:"http://127.0.0.1:8000"`
 	MetricsAddress       string        `env:"FLEETSHARD_METRICS_ADDRESS" envDefault:":8080"`
 	RuntimePollPeriod    time.Duration `env:"RUNTIME_POLL_PERIOD" envDefault:"5s"`
+	RuntimePollTimeout   time.Duration `env:"RUNTIME_POLL_TIMEOUT" envDefault:"2m"`
 }
 
 // GetConfig retrieves the current runtime configuration from the environment and returns it.
