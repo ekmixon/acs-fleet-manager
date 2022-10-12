@@ -221,9 +221,14 @@ func updateCoreV1Resources(to *corev1.ResourceRequirements, from private.Resourc
 
 // updateCentralFromPrivateAPI updates the CentralSpec using the non-zero fields from the API's CentralSpec.
 func updateCentralFromPrivateAPI(c *dbapi.CentralSpec, apiCentralSpec *private.CentralSpec) error {
-	err := updateCoreV1Resources(&c.Resources, apiCentralSpec.Resources)
-	if err != nil {
-		return fmt.Errorf("updating resources within CentralSpec: %w", err)
+	if len(apiCentralSpec.Resources.Requests) == 0 && len(apiCentralSpec.Resources.Limits) == 0 {
+		// Empty resource configuration given, delete persisted resource configuration for the tenant, thus activating autoscaling.
+		c.Resources = corev1.ResourceRequirements{}
+	} else {
+		err := updateCoreV1Resources(&c.Resources, apiCentralSpec.Resources)
+		if err != nil {
+			return fmt.Errorf("updating resources within CentralSpec: %w", err)
+		}
 	}
 	return nil
 }

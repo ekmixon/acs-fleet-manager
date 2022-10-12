@@ -49,6 +49,21 @@ func (c *ManagedCentralPresenter) PresentManagedCentral(from *dbapi.CentralReque
 		}
 	}
 
+	centralResources := private.ResourceRequirements{}
+	if len(central.Resources.Limits) != 0 || len(central.Resources.Requests) != 0 {
+		// Fill in defaults if the resource config is not completely empty (which is interepreted as: scale automatically).
+		centralResources = private.ResourceRequirements{
+			Requests: map[string]string{
+				corev1.ResourceCPU.String():    orDefaultQty(central.Resources.Requests[corev1.ResourceCPU], defaults.Central.CPURequest).String(),
+				corev1.ResourceMemory.String(): orDefaultQty(central.Resources.Requests[corev1.ResourceMemory], defaults.Central.MemoryRequest).String(),
+			},
+			Limits: map[string]string{
+				corev1.ResourceCPU.String():    orDefaultQty(central.Resources.Limits[corev1.ResourceCPU], defaults.Central.CPULimit).String(),
+				corev1.ResourceMemory.String(): orDefaultQty(central.Resources.Limits[corev1.ResourceMemory], defaults.Central.MemoryLimit).String(),
+			},
+		}
+	}
+
 	res := private.ManagedCentral{
 		Id:   from.ID,
 		Kind: "ManagedCentral",
@@ -86,16 +101,7 @@ func (c *ManagedCentralPresenter) PresentManagedCentral(from *dbapi.CentralReque
 				CentralOperator: from.DesiredCentralOperatorVersion,
 			},
 			Central: private.ManagedCentralAllOfSpecCentral{
-				Resources: private.ResourceRequirements{
-					Requests: map[string]string{
-						corev1.ResourceCPU.String():    orDefaultQty(central.Resources.Requests[corev1.ResourceCPU], defaults.Central.CPURequest).String(),
-						corev1.ResourceMemory.String(): orDefaultQty(central.Resources.Requests[corev1.ResourceMemory], defaults.Central.MemoryRequest).String(),
-					},
-					Limits: map[string]string{
-						corev1.ResourceCPU.String():    orDefaultQty(central.Resources.Limits[corev1.ResourceCPU], defaults.Central.CPULimit).String(),
-						corev1.ResourceMemory.String(): orDefaultQty(central.Resources.Limits[corev1.ResourceMemory], defaults.Central.MemoryLimit).String(),
-					},
-				},
+				Resources: centralResources,
 			},
 			Scanner: private.ManagedCentralAllOfSpecScanner{
 				Analyzer: private.ManagedCentralAllOfSpecScannerAnalyzer{

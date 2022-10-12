@@ -12,6 +12,7 @@ import (
 	"helm.sh/helm/v3/pkg/chart"
 	"helm.sh/helm/v3/pkg/chartutil"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 
 	"github.com/golang/glog"
 	openshiftRouteV1 "github.com/openshift/api/route/v1"
@@ -21,9 +22,11 @@ import (
 	centralConstants "github.com/stackrox/acs-fleet-manager/internal/dinosaur/constants"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/api/private"
 	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/converters"
+	"github.com/stackrox/acs-fleet-manager/internal/dinosaur/pkg/defaults"
 	"github.com/stackrox/rox/operator/apis/platform/v1alpha1"
 	corev1 "k8s.io/api/core/v1"
 	apiErrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/pointer"
 	ctrlClient "sigs.k8s.io/controller-runtime/pkg/client"
@@ -39,6 +42,12 @@ const (
 	helmReleaseName = "tenant-resources"
 
 	managedServicesAnnotation = "platform.stackrox.io/managed-services"
+
+	vpaConfigurationCentralName = "vpa-config-central"
+)
+
+var (
+	vpaConfigurations = []string{vpaConfigurationCentralName}
 )
 
 // CentralReconcilerOptions are the static options for creating a reconciler.
@@ -88,10 +97,14 @@ func (r *CentralReconciler) Reconcile(ctx context.Context, remoteCentral private
 
 	monitoringExposeEndpointEnabled := v1alpha1.ExposeEndpointEnabled
 
-	centralResources, err := converters.ConvertPrivateResourceRequirementsToCoreV1(&remoteCentral.Spec.Central.Resources)
-	if err != nil {
-		return nil, errors.Wrap(err, "converting Central resources")
+	centralResources := defaults.CentralResources
+	if err = patchResourceList(&centralResources.Requests, remoteCentral.Spec.Central.Resources.Requests); err != nil {
+		return nil, errors.Wrap(err, "updating Central resource requests")
 	}
+	if err = patchResourceList(&centralResources.Limits, remoteCentral.Spec.Central.Resources.Limits); err != nil {
+		return nil, errors.Wrap(err, "updating Central resource limits")
+	}
+
 	scannerAnalyzerResources, err := converters.ConvertPrivateResourceRequirementsToCoreV1(&remoteCentral.Spec.Scanner.Analyzer.Resources)
 	if err != nil {
 		return nil, errors.Wrap(err, "converting Scanner Analyzer resources")
@@ -204,6 +217,13 @@ func (r *CentralReconciler) Reconcile(ctx context.Context, remoteCentral private
 			return nil, errors.Wrapf(err, "creating new central %s/%s", remoteCentralNamespace, remoteCentralName)
 		}
 		glog.Infof("Central %s/%s created", central.GetNamespace(), central.GetName())
+
+		if len(remoteCentral.Spec.Central.Resources.Limits) == 0 && len(remoteCentral.Spec.Central.Resources.Requests) == 0 {
+			// Provided Central resources are empty. Create a VPA configuration in the tenant's namespace.
+			if err := r.createVPAConfig(ctx, vpaConfigurationCentralName, "central", remoteCentral); err != nil {
+				return nil, err
+			}
+		}
 	} else {
 		glog.Infof("Update central %s/%s", central.GetNamespace(), central.GetName())
 		existingCentral.Spec = central.Spec
@@ -216,6 +236,17 @@ func (r *CentralReconciler) Reconcile(ctx context.Context, remoteCentral private
 
 		if err := r.client.Update(ctx, &existingCentral); err != nil {
 			return nil, errors.Wrapf(err, "updating central %s/%s", central.GetNamespace(), central.GetName())
+		}
+
+		if len(remoteCentral.Spec.Central.Resources.Limits) == 0 && len(remoteCentral.Spec.Central.Resources.Requests) == 0 {
+			// Provided Central resources are empty. Create a VPA configuration in the tenant's namespace.
+			if err := r.ensureVPAConfigExists(ctx, vpaConfigurationCentralName, "central", remoteCentral); err != nil {
+				return nil, err
+			}
+		} else {
+			if _, err := r.ensureVPAConfigDeleted(ctx, vpaConfigurationCentralName, remoteCentral); err != nil {
+				return nil, err
+			}
 		}
 	}
 
@@ -325,6 +356,12 @@ func (r CentralReconciler) ensureCentralDeleted(ctx context.Context, remoteCentr
 	}
 	globalDeleted = globalDeleted && centralDeleted
 
+	vpaDeleted, err := r.ensureVPAConfigDeleted(ctx, vpaConfigurationCentralName, remoteCentral)
+	if err != nil {
+		return false, err
+	}
+	globalDeleted = globalDeleted && vpaDeleted
+
 	chartResourcesDeleted, err := r.ensureChartResourcesDeleted(ctx, remoteCentral)
 	if err != nil {
 		return false, err
@@ -429,6 +466,85 @@ func (r *CentralReconciler) ensureCentralCRDeleted(ctx context.Context, central 
 		return false, errors.Wrapf(err, "delete central CR %s/%s", central.GetNamespace(), central.GetName())
 	}
 	glog.Infof("Central CR %s/%s is marked for deletion", central.GetNamespace(), central.GetName())
+	return false, nil
+}
+
+func (r *CentralReconciler) createVPAConfig(ctx context.Context, name string, deploymentName string, remoteCentral private.ManagedCentral) error {
+	glog.Infof("creating VPA configuration for Central %s/%s", remoteCentral.Metadata.Namespace, remoteCentral.Metadata.Name)
+
+	vpaConfig := unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "autoscaling.k8s.io/v1",
+			"kind":       "VerticalPodAutoscaler",
+			"metadata": map[string]interface{}{
+				"name":      name,
+				"namespace": remoteCentral.Metadata.Namespace,
+			},
+			"spec": map[string]interface{}{
+				"targetRef": map[string]interface{}{
+					"apiVersion": "apps/v1",
+					"kind":       "Deployment",
+					"name":       deploymentName,
+				},
+				"updatePolicy": map[string]interface{}{
+					"updateMode": "Auto",
+				},
+			},
+		},
+	}
+
+	err := r.client.Create(ctx, &vpaConfig)
+	if err != nil {
+		return fmt.Errorf("creating VPA configuration for Central %s/%s: %w", remoteCentral.Metadata.Namespace, remoteCentral.Metadata.Name, err)
+	}
+
+	glog.Infof("VPA configuration for %s/%s created", remoteCentral.Metadata.Namespace, remoteCentral.Metadata.Name)
+
+	return nil
+}
+
+func (r *CentralReconciler) ensureVPAConfigExists(ctx context.Context, name string, deploymentName string, remoteCentral private.ManagedCentral) error {
+	vpaConfig := unstructured.Unstructured{}
+	namespace := remoteCentral.Metadata.Namespace
+
+	vpaConfig.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "autoscaling.k8s.io",
+		Version: "v1",
+		Kind:    "VerticalPodAutoscaler",
+	})
+	err := r.client.Get(ctx, ctrlClient.ObjectKey{Namespace: remoteCentral.Metadata.Namespace, Name: name}, &vpaConfig)
+	if err != nil && !apiErrors.IsNotFound(err) {
+		return fmt.Errorf("retrieving VPA configuration for namespace %q: %w", namespace, err)
+	}
+
+	if apiErrors.IsNotFound(err) {
+		if err := r.createVPAConfig(ctx, name, deploymentName, remoteCentral); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (r *CentralReconciler) ensureVPAConfigDeleted(ctx context.Context, name string, central private.ManagedCentral) (bool, error) {
+	vpaConfig := unstructured.Unstructured{}
+	vpaConfig.SetGroupVersionKind(schema.GroupVersionKind{
+		Group:   "autoscaling.k8s.io",
+		Version: "v1",
+		Kind:    "VerticalPodAutoscaler",
+	})
+
+	err := r.client.Get(ctx, ctrlClient.ObjectKey{Namespace: central.Metadata.Namespace, Name: name}, &vpaConfig)
+	if err != nil {
+		if apiErrors.IsNotFound(err) {
+			return true, nil
+		}
+		return false, errors.Wrapf(err, "deleting VPA configuration for Central %s/%s", central.Metadata.Namespace, vpaConfigurationCentralName)
+	}
+	if err := r.client.Delete(ctx, &vpaConfig); err != nil {
+		return false, errors.Wrapf(err, "deleting VPA configuration for Central %s/%s", central.Metadata.Namespace, vpaConfigurationCentralName)
+	}
+	glog.Infof("VPA configuration %s/%s deleted", central.Metadata.Namespace, vpaConfigurationCentralName)
 	return false, nil
 }
 
@@ -612,4 +728,25 @@ func NewCentralReconciler(k8sClient ctrlClient.Client, central private.ManagedCe
 
 		resourcesChart: resourcesChart,
 	}
+}
+
+func patchResourceList(resources *corev1.ResourceList, updates map[string]string) error {
+	knownResources := []string{corev1.ResourceCPU.String(), corev1.ResourceMemory.String()}
+	resourcesMap := (map[corev1.ResourceName]resource.Quantity)(*resources)
+
+nextUpdate:
+	for k, v := range updates {
+		for _, res := range knownResources {
+			if k == res {
+				qty, err := resource.ParseQuantity(v)
+				if err != nil {
+					return fmt.Errorf("parsing quantity: %w", err)
+				}
+				resourcesMap[corev1.ResourceName(k)] = qty
+				continue nextUpdate
+			}
+		}
+	}
+
+	return nil
 }
